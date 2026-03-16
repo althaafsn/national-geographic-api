@@ -2,18 +2,17 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es6",
+    "esModuleInterop": true,
     "sourceMap": true,
     "declaration": true,
-    "esModuleInterop": true,
     "outDir": "dist",
     "baseUrl": "."
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

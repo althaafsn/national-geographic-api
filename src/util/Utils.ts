@@ -1,57 +1,52 @@
-import request, { CoreOptions, UrlOptions } from 'request';
 import { Configs } from '../config/Configs';
-import { NewsPayload, PhotoPayload } from '../index';
+import { NewsPayload } from '../index';
 
 export class Utils {
-
-    /* istanbul ignore next line */
+  /* istanbul ignore next */
   private constructor() {}
 
-  public static makeRequest(options: UrlOptions & CoreOptions, cb?: Function): Promise<NewsPayload[]|PhotoPayload>|void {
-    if (typeof cb !== 'function') {
-      return new Promise((resolve, reject) => {
-        request(options, (err, resp, body) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(JSON.parse(body));
-          }
-        });
-      });
-      // tslint:disable-next-line
-    } else {
-      request(options, (err, resp, body) => {
-        if (err) return cb(err);
-        if (body) {
-          const result = JSON.parse(body);
-          if (result.error) {
-            return cb(result.error);
-            // tslint:disable-next-line
-          } else {
-            return cb(null, result);
-          }
-        }
-        cb(null, resp);
-      });
-    }
-  }
-
-  public static getRequestPayload(url: string): UrlOptions & CoreOptions {
-    return {
-      url,
+  public static async fetchJson<T = NewsPayload[]>(url: string): Promise<T> {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'apiauth-apiuser': Configs.getAPIUser(),
-        'apiauth-apikey': Configs.getAPIKey(),
+        'User-Agent': 'Mozilla/5.0 (compatible)',
       },
-    };
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+
+    return response.json() as Promise<T>;
+  }
+
+  public static async fetchHtml(url: string): Promise<string> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+
+    return response.text();
+  }
+
+  public static extractMeta(html: string, property: string): string {
+    const match = html.match(new RegExp(`property="${property}"[^>]*content="([^"]+)"`));
+    return match ? match[1] : '';
+  }
+
+  public static extractCanonical(html: string): string {
+    const match = html.match(/rel="canonical"[^>]*href="([^"]+)"/);
+    return match ? match[1] : '';
   }
 
   public static getLatestNewsUrl(pageSize: number, pageNumber: number): string {
     return `${Configs.getLatestNewsAPIUrl()}&pageSize=${pageSize}&page=${pageNumber}`;
-  }
-
-  public static getPictureOfDayUrl(startDate: string, numberOfDays: number): string {
-    return `${Configs.getPictureOfDayAPIUrl()}&publication_datetime_from=${startDate}T00:00:00Z&page=${numberOfDays}&limit=1`;
   }
 }

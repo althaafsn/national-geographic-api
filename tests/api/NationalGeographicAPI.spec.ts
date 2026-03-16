@@ -1,300 +1,123 @@
 describe('NationalGeographicAPI', () => {
+  const TEST_PAGE_SIZE = 1234;
+  const TEST_PAGE_NUMBER = 9876;
+  const TEST_LISTING_URL = 'https://natgeo.com/photo-of-the-day';
+  const TEST_PHOTO_URL = 'https://natgeo.com/photo-of-the-day/todays-photo';
+  const TEST_IMAGE_URL = 'https://i.natgeofe.com/photo.jpg';
+  const TEST_INVALID_PARAM = 'NOT_A_NUMBER';
 
-    const TEST_PAGE_SIZE: number = 1234;
-    const TEST_PAGE_NUMBER: number = 9876;
-    const TEST_URL: string= 'TEST_URL';
-    const TEST_REQUEST_PAYLOAD = 'TEST_PAYLOAD';
-    const TEST_INVALID_PARAM = 'TEST_INVALID_PARAM';
-    const mockRequestPayload = jest.fn();
-    const mockMakeRequest = jest.fn();
-    const mockLatestNewsUrl = jest.fn();
-    const mockPictureOfDayUrl = jest.fn();
+  const mockFetchJson = jest.fn();
+  const mockFetchHtml = jest.fn();
+  const mockExtractMeta = jest.fn();
+  const mockExtractCanonical = jest.fn();
+  const mockGetLatestNewsUrl = jest.fn();
+  const mockGetPODListingUrl = jest.fn();
 
-    beforeEach(()=> {
-        mockLatestNewsUrl.mockReturnValueOnce(TEST_URL);
-        mockPictureOfDayUrl.mockReturnValueOnce(TEST_URL);
-        mockRequestPayload.mockReturnValueOnce(TEST_REQUEST_PAYLOAD);
-        jest.mock('../../src/util/Utils', () => ({ Utils: {
-                getRequestPayload: mockRequestPayload,
-                makeRequest: mockMakeRequest,
-                getLatestNewsUrl: mockLatestNewsUrl,
-                getPictureOfDayUrl: mockPictureOfDayUrl
-            }}));
+  beforeEach(() => {
+    mockGetLatestNewsUrl.mockReturnValue('TEST_NEWS_URL');
+    mockGetPODListingUrl.mockReturnValue(TEST_LISTING_URL);
+
+    jest.mock('../../src/util/Utils', () => ({
+      Utils: {
+        fetchJson: mockFetchJson,
+        fetchHtml: mockFetchHtml,
+        extractMeta: mockExtractMeta,
+        extractCanonical: mockExtractCanonical,
+        getLatestNewsUrl: mockGetLatestNewsUrl,
+      },
+    }));
+
+    jest.mock('../../src/config/Configs', () => ({
+      Configs: {
+        getLatestNewsAPIUrl: jest.fn().mockReturnValue('https://natgeo.com/news'),
+        getPODListingUrl: mockGetPODListingUrl,
+      },
+    }));
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
+    jest.resetModules();
+  });
+
+  describe('getLatestNews', () => {
+    it('uses defaults when called with no args', async () => {
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await NationalGeographicAPI.getLatestNews();
+      expect(mockGetLatestNewsUrl).toHaveBeenCalledWith(3, 0);
+      expect(mockFetchJson).toHaveBeenCalledWith('TEST_NEWS_URL');
     });
 
-    afterEach(() => {
-        jest.resetAllMocks();
+    it('uses defaults when pageSize is invalid', async () => {
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await NationalGeographicAPI.getLatestNews(TEST_INVALID_PARAM);
+      expect(mockGetLatestNewsUrl).toHaveBeenCalledWith(3, 0);
     });
 
-    describe('getLatestNews', () => {
-        describe('promises', () => {
-            it('given no cb returns promise with default payload', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews();
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(3, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, undefined);
-            });
-
-            it('given no cb and invalid page size returns promise with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_INVALID_PARAM);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(3, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, undefined);
-            });
-
-            it('given no cb and invalid pageSize, pageNumber returns promise with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_INVALID_PARAM, TEST_INVALID_PARAM);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(3, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, undefined);
-            });
-
-            it('given no cb, valid pageSize, invalid pageNumber returns promise with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_PAGE_SIZE, TEST_INVALID_PARAM);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(TEST_PAGE_SIZE, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, undefined);
-            });
-
-            it('given no cb, valid pageSize, pageNumber returns promise with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_PAGE_SIZE, TEST_PAGE_NUMBER);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(TEST_PAGE_SIZE, TEST_PAGE_NUMBER);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, undefined);
-            });
-        });
-
-        describe('callbacks', () => {
-            const mockCallback = jest.fn();
-            it('given cb, and no params, generates payload with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(mockCallback);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(3, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, mockCallback);
-            });
-
-            it('given cb, and invalid pageSize, generates payload with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_INVALID_PARAM, mockCallback);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(3, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, mockCallback);
-            });
-
-            it('given cb, and invalid pageSize, pageNumber, generates payload with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_INVALID_PARAM, TEST_INVALID_PARAM, mockCallback);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(3, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, mockCallback);
-            });
-
-            it('given cb, valid pageSize, invalid pageNumber, generates payload with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_PAGE_SIZE, TEST_INVALID_PARAM, mockCallback);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(TEST_PAGE_SIZE, 0);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, mockCallback);
-            });
-
-            it('given cb, valid pageSize, pageNumber, generates payload with default values', () => {
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                NationalGeographicAPI.getLatestNews(TEST_PAGE_SIZE, TEST_PAGE_NUMBER, mockCallback);
-
-                expect(mockLatestNewsUrl).toBeCalled();
-                expect(mockLatestNewsUrl).toHaveBeenCalledWith(TEST_PAGE_SIZE, TEST_PAGE_NUMBER);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD, mockCallback);
-            });
-        });
+    it('uses defaults when both params are invalid', async () => {
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await NationalGeographicAPI.getLatestNews(TEST_INVALID_PARAM, TEST_INVALID_PARAM);
+      expect(mockGetLatestNewsUrl).toHaveBeenCalledWith(3, 0);
     });
 
-    describe('getPhotoOfDay', () => {
-        const oneDayMillis = 1000*60*60*24;
-        const now = new Date().toISOString();
-        const TEST_DAY_DEFAULT = now.substring(0, now.indexOf('T'));
-        const TEST_NUMBER_OF_DAYS_DEFAULT = 1;
-        const TEST_HISTORICAL_DAY = '2016-12-14';
-        const TEST_HISTORICAL_DATE = new Date(TEST_HISTORICAL_DAY);
-        const TEST_HISTORICAL_NUMBER_OF_DAYS = Math.floor(Math.abs((Date.now() - TEST_HISTORICAL_DATE.getTime()) / oneDayMillis));
-        const TEST_ERROR = 'TEST_ERROR';
-        const TEST_API_PAYLOAD = {data:[{payload: 'TEST_RESULT'}]};
-        const TEST_EMPTY_ARRAY: Object[] = [];
-        const TEST_API_PAYLOAD_EMPTY = {data: TEST_EMPTY_ARRAY};
-
-        describe('promises', () => {
-            it('given no cb and no params, throws error given backend reject', async () => {
-                mockMakeRequest.mockReturnValueOnce(Promise.reject(TEST_ERROR));
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                await expect(NationalGeographicAPI.getPhotoOfDay()).rejects.toThrow('National Geographic API retrieval error');
-            });
-
-            it('given no cb and no params and api content returns current day payload', async () => {
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD));
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                const result = await NationalGeographicAPI.getPhotoOfDay();
-
-                expect(mockPictureOfDayUrl).toBeCalled();
-                expect(mockPictureOfDayUrl).toHaveBeenCalledWith(TEST_DAY_DEFAULT, TEST_NUMBER_OF_DAYS_DEFAULT);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD);
-                expect(result).toEqual(TEST_API_PAYLOAD);
-            });
-
-            it('given no cb and no params and no api content returns yesterday payload', async () => {
-                mockPictureOfDayUrl.mockReturnValueOnce(TEST_URL);
-                mockRequestPayload.mockReturnValueOnce(TEST_REQUEST_PAYLOAD);
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD_EMPTY));
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD));
-
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                const result = await NationalGeographicAPI.getPhotoOfDay();
-
-                expect(mockPictureOfDayUrl).toBeCalled();
-                expect(mockPictureOfDayUrl).toHaveBeenCalledWith(TEST_DAY_DEFAULT, TEST_NUMBER_OF_DAYS_DEFAULT);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD);
-                expect(result).toEqual(TEST_API_PAYLOAD);
-            });
-
-            it('given no cb and date, return expected day payload', async () => {
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD));
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                const result = await NationalGeographicAPI.getPhotoOfDay(TEST_HISTORICAL_DAY);
-
-                expect(mockPictureOfDayUrl).toBeCalled();
-                expect(mockPictureOfDayUrl).toHaveBeenCalledWith(TEST_HISTORICAL_DAY, TEST_HISTORICAL_NUMBER_OF_DAYS);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD);
-                expect(result).toEqual(TEST_API_PAYLOAD);
-            });
-        });
-
-        describe('callbacks', () => {
-            const mockCallback = jest.fn();
-
-            it('given cb and no params, throws error given backend reject', async () => {
-                mockMakeRequest.mockReturnValueOnce(Promise.reject(TEST_ERROR));
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                await expect(NationalGeographicAPI.getPhotoOfDay(mockCallback)).rejects.toThrow('National Geographic API retrieval error');
-            });
-
-            it('given cb and no params and api content returns current day payload', async () => {
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD));
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                await NationalGeographicAPI.getPhotoOfDay(mockCallback);
-
-                expect(mockPictureOfDayUrl).toBeCalled();
-                expect(mockPictureOfDayUrl).toHaveBeenCalledWith(TEST_DAY_DEFAULT, TEST_NUMBER_OF_DAYS_DEFAULT);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD);
-                expect(mockCallback).toBeCalled();
-                expect(mockCallback).toHaveBeenCalledWith(null, TEST_API_PAYLOAD);
-            });
-
-            it('given cb and no params and no api content returns yesterday payload', async () => {
-                mockPictureOfDayUrl.mockReturnValueOnce(TEST_URL);
-                mockRequestPayload.mockReturnValueOnce(TEST_REQUEST_PAYLOAD);
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD_EMPTY));
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD));
-
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                await NationalGeographicAPI.getPhotoOfDay(mockCallback);
-
-                expect(mockPictureOfDayUrl).toBeCalled();
-                expect(mockPictureOfDayUrl).toHaveBeenCalledWith(TEST_DAY_DEFAULT, TEST_NUMBER_OF_DAYS_DEFAULT);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD);
-                expect(mockCallback).toBeCalled();
-                expect(mockCallback).toHaveBeenCalledWith(null, TEST_API_PAYLOAD);
-            });
-
-            it('given cb and date, return expected day payload', async () => {
-                mockMakeRequest.mockReturnValueOnce(Promise.resolve(TEST_API_PAYLOAD));
-                const NationalGeographicAPI = require('../../src/api/NationalGeographicAPI').NationalGeographicAPI;
-
-                await NationalGeographicAPI.getPhotoOfDay(TEST_HISTORICAL_DAY, mockCallback);
-
-                expect(mockPictureOfDayUrl).toBeCalled();
-                expect(mockPictureOfDayUrl).toHaveBeenCalledWith(TEST_HISTORICAL_DAY, TEST_HISTORICAL_NUMBER_OF_DAYS);
-                expect(mockRequestPayload).toBeCalled();
-                expect(mockRequestPayload).toHaveBeenCalledWith(TEST_URL);
-                expect(mockMakeRequest).toBeCalled();
-                expect(mockMakeRequest).toHaveBeenCalledWith(TEST_REQUEST_PAYLOAD);
-                expect(mockCallback).toBeCalled();
-                expect(mockCallback).toHaveBeenCalledWith(null, TEST_API_PAYLOAD);
-            });
-        });
+    it('uses provided pageSize, defaults pageNumber when invalid', async () => {
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await NationalGeographicAPI.getLatestNews(TEST_PAGE_SIZE, TEST_INVALID_PARAM);
+      expect(mockGetLatestNewsUrl).toHaveBeenCalledWith(TEST_PAGE_SIZE, 0);
     });
+
+    it('uses provided pageSize and pageNumber', async () => {
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await NationalGeographicAPI.getLatestNews(TEST_PAGE_SIZE, TEST_PAGE_NUMBER);
+      expect(mockGetLatestNewsUrl).toHaveBeenCalledWith(TEST_PAGE_SIZE, TEST_PAGE_NUMBER);
+    });
+  });
+
+  describe('getPhotoOfDay', () => {
+    it('throws when fetchHtml fails on listing page', async () => {
+      mockFetchHtml.mockRejectedValueOnce(new Error('network error'));
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await expect(NationalGeographicAPI.getPhotoOfDay()).rejects.toThrow('network error');
+    });
+
+    it('throws when no canonical URL is found', async () => {
+      mockFetchHtml.mockResolvedValueOnce('<html></html>');
+      mockExtractCanonical.mockReturnValueOnce('');
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await expect(NationalGeographicAPI.getPhotoOfDay()).rejects.toThrow(
+        'Could not find photo page URL',
+      );
+    });
+
+    it('throws when no image URL is found in photo page', async () => {
+      mockFetchHtml.mockResolvedValueOnce('<html>listing</html>');
+      mockExtractCanonical.mockReturnValueOnce(TEST_PHOTO_URL);
+      mockFetchHtml.mockResolvedValueOnce('<html>photo page</html>');
+      mockExtractMeta.mockReturnValue('');
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      await expect(NationalGeographicAPI.getPhotoOfDay()).rejects.toThrow(
+        'Could not find image URL',
+      );
+    });
+
+    it('returns a PhotoPayload with scraped data', async () => {
+      mockFetchHtml.mockResolvedValueOnce('<html>listing</html>');
+      mockExtractCanonical.mockReturnValueOnce(TEST_PHOTO_URL);
+      mockFetchHtml.mockResolvedValueOnce('<html>photo</html>');
+      mockExtractMeta
+        .mockReturnValueOnce(TEST_IMAGE_URL)   // og:image
+        .mockReturnValueOnce('Photo Title')     // og:title
+        .mockReturnValueOnce('A description'); // og:description
+
+      const { NationalGeographicAPI } = require('../../src/api/NationalGeographicAPI');
+      const result = await NationalGeographicAPI.getPhotoOfDay();
+
+      expect(result).toEqual({
+        imageUrl: TEST_IMAGE_URL,
+        title: 'Photo Title',
+        description: 'A description',
+        pageUrl: TEST_PHOTO_URL,
+      });
+    });
+  });
 });
