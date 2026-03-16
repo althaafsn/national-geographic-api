@@ -29,16 +29,12 @@ async function main() {
   writeFileSync(filePath, Buffer.from(buffer));
   console.log(`Saved       : ${filePath}`);
 
-  // Set GNOME wallpaper (covers both light and dark mode)
+  // Set GNOME wallpaper for both light and dark mode
   const fileUri = `file://${filePath}`;
   execSync(`gsettings set org.gnome.desktop.background picture-uri "${fileUri}"`);
   execSync(`gsettings set org.gnome.desktop.background picture-options "zoom"`);
-  // picture-uri-dark exists in GNOME 42+ — skip silently if unavailable
-  try {
-    execSync(`gsettings set org.gnome.desktop.background picture-uri-dark "${fileUri}"`, { stdio: 'ignore' });
-  } catch {
-    // not available on this GNOME version, no action needed
-  }
+  // picture-uri-dark isn't exposed via gsettings on this system, write via dconf directly
+  execSync(`dconf write /org/gnome/desktop/background/picture-uri-dark "'${fileUri}'"`);
 
   console.log('Wallpaper updated!');
 }
